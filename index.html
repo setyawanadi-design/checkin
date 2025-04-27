@@ -139,24 +139,35 @@
   });
 
   // Send data to Google Sheets
-  function sendToGoogleSheets(name, notes, time, location) {
-    const values = [[SURVEYOR, NOTES, TIMESTAMP, LOCATION]];
+function submitToGoogleSheets() {
+  var sheetId = "your-google-sheet-id";
+  var range = "Sheet1!A2:D"; // Adjust range as needed
+  var data = [
+    [
+      "Surveyor Name",  // Name
+      "Notes",          // Notes
+      new Date(),       // Timestamp
+      "Latitude,Longitude" // Location
+    ]
+  ];
 
-    const body = {
-      values: values
-    };
+  var body = {
+    values: data
+  };
 
-    gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: 'Sheet1!A:D', // Adjust this range to match your sheet
-      valueInputOption: 'RAW',
-      resource: body
-    }).then((response) => {
-      console.log('Data sent to Google Sheets:', response);
-    }).catch((error) => {
-      console.error('Error sending data to Google Sheets:', error);
-    });
-  }
+  var params = {
+    valueInputOption: "RAW"
+  };
+
+  var request = gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: sheetId,
+    range: range,
+    valueInputOption: "RAW",
+    resource: body
+  });
+
+  request.execute();
+}
 </script>
 
 
