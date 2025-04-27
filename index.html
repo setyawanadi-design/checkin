@@ -50,11 +50,25 @@
       scope: 'https://www.googleapis.com/auth/spreadsheets',
     }).then(function () {
       console.log('Google API initialized!');
+      checkAuth();
     });
   }
 
   // Load Google API
   gapi.load('client:auth2', initGoogleAPI);
+
+  function checkAuth() {
+    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+  }
+
+  function updateSigninStatus(isSignedIn) {
+    if (isSignedIn) {
+      console.log("Signed in successfully!");
+    } else {
+      console.log("Not signed in. Please sign in first.");
+    }
+  }
 
   form.addEventListener('submit', function(event) {
     event.preventDefault(); // Stop page refresh
@@ -113,7 +127,7 @@
     });
 
     request.execute(function(response) {
-      console.log('Data added to Google Sheets: ', response);
+      console.log('Data added to Google Sheets:', response);
     });
   }
 </script>
