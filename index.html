@@ -39,51 +39,6 @@
   const form = document.getElementById('checkInForm');
   const table = document.getElementById('checkInTable').getElementsByTagName('tbody')[0];
 
-  form.addEventListener('submit', function(event) {
-    event.preventDefault(); // 🛑 Stop page refresh
-
-    const name = document.getElementById('name').value;
-    const notes = document.getElementById('notes').value;
-
-    // Get current time
-    const now = new Date();
-    const timeString = now.toLocaleTimeString(); // Example: "14:23:45"
-
-    // Check if location is available
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        const location = `Lat: ${latitude}, Lon: ${longitude}`;
-
-        // Create new row
-        const newRow = table.insertRow();
-
-        // Create four cells
-        const nameCell = newRow.insertCell(0);
-        const notesCell = newRow.insertCell(1);
-        const timeCell = newRow.insertCell(2);
-        const locationCell = newRow.insertCell(3);
-
-        // Put data into cells
-        nameCell.textContent = name;
-        notesCell.textContent = notes;
-        timeCell.textContent = timeString;
-        locationCell.textContent = location;
-
-        // Clear form
-        form.reset();
-      }, function() {
-        alert("Location access denied. Can't check-in.");
-      });
-    } else {
-      alert("Geolocation is not supported by this browser.");
-    }
-  });
-</script>
-
-<script>
-  // Google Sheets API setup (add your API key here)
   const CLIENT_ID = '452071405201-qd5dajju29v0mggmsqo2j0iov4f6audg.apps.googleusercontent.com';
   const API_KEY = 'AIzaSyBOV8cDq7fceHCigFuoCevPwRN9pG6riyI';
   const SHEET_ID = '1t0eXpsVfZL2ZEyc8N35pzrR7xQINkkhUvRekYki46bo';
@@ -101,26 +56,23 @@
   // Load Google API
   gapi.load('client:auth2', initGoogleAPI);
 
-  const form = document.getElementById('checkInForm');
-  const table = document.getElementById('checkInTable').getElementsByTagName('tbody')[0];
-
   form.addEventListener('submit', function(event) {
-    event.preventDefault();
+    event.preventDefault(); // Stop page refresh
 
     const name = document.getElementById('name').value;
     const notes = document.getElementById('notes').value;
     const now = new Date();
-    const timeString = now.toLocaleTimeString();
+    const timeString = now.toLocaleTimeString(); // Current time
 
-    // Location handling
-    let location = 'Not Available';
+    let location = 'Not Available'; // Default location if geolocation fails
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(position) {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
-        location = `Lat: ${latitude}, Lon: ${longitude}`;
+        location = `Lat: ${latitude}, Lon: ${longitude}`; // Use actual location
 
-        // Create new row
+        // Create a new row in the table
         const newRow = table.insertRow();
         newRow.insertCell(0).textContent = name;
         newRow.insertCell(1).textContent = notes;
@@ -130,46 +82,41 @@
         // Send data to Google Sheets
         sendToGoogleSheets(name, notes, timeString, location);
 
+        // Reset the form
         form.reset();
       }, function() {
         alert("Location access denied.");
       });
     }
-
   });
 
-  // Send data to Google Sheets
-function submitToGoogleSheets() {
-  var sheetId = "1t0eXpsVfZL2ZEyc8N35pzrR7xQINkkhUvRekYki46bo";
-  var range = "Sheet1!A1:D1"; // Adjust range as needed
-  var data = [
-    [
-      "SURVEYOR",  // Name
-      "NOTES",          // Notes
-      new Date(),       // Timestamp
-      "Latitude,Longitude" // Location
-    ]
-  ];
+  // Function to send data to Google Sheets
+  function sendToGoogleSheets(name, notes, time, location) {
+    const range = "Sheet1!A2:D2"; // Adjust this to the range where data should be inserted
+    const values = [
+      [name, notes, time, location]
+    ];
 
-  var body = {
-    values: data
-  };
+    const body = {
+      values: values
+    };
 
-  var params = {
-    valueInputOption: "RAW"
-  };
+    const params = {
+      valueInputOption: "RAW"
+    };
 
-  var request = gapi.client.sheets.spreadsheets.values.update({
-    spreadsheetId: sheetId,
-    range: range,
-    valueInputOption: "RAW",
-    resource: body
-  });
+    const request = gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: range,
+      valueInputOption: "RAW",
+      resource: body
+    });
 
-  request.execute();
-}
+    request.execute(function(response) {
+      console.log('Data added to Google Sheets: ', response);
+    });
+  }
 </script>
-
 
 </body>
 </html>
