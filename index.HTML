@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://apis.google.com/js/api.js"></script>
+  <title>Surveyor App</title>
+</head>
+<body>
+
+  <h1>📋 Surveyor Check-In</h1>
+
+  <form id="checkInForm">
+    <label>Name:</label><br>
+    <input type="text" id="name" required><br><br>
+
+    <label>Notes:</label><br>
+    <input type="text" id="notes"><br><br>
+
+    <button type="submit">Check In</button>
+  </form>
+
+<h2>Today's Check-Ins</h2>
+
+<table border="1" id="checkInTable">
+<thead>
+  <tr>
+    <th>Name</th>
+    <th>Notes</th>
+    <th>Time</th>
+    <th>Location</th>
+  </tr>
+</thead>
+
+  <tbody>
+    <!-- New rows will go here -->
+  </tbody>
+</table>
+
+<script>
+  const form = document.getElementById('checkInForm');
+  const table = document.getElementById('checkInTable').getElementsByTagName('tbody')[0];
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault(); // 🛑 Stop page refresh
+
+    const name = document.getElementById('name').value;
+    const notes = document.getElementById('notes').value;
+
+    // Get current time
+    const now = new Date();
+    const timeString = now.toLocaleTimeString(); // Example: "14:23:45"
+
+    // Check if location is available
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const location = `Lat: ${latitude}, Lon: ${longitude}`;
+
+        // Create new row
+        const newRow = table.insertRow();
+
+        // Create four cells
+        const nameCell = newRow.insertCell(0);
+        const notesCell = newRow.insertCell(1);
+        const timeCell = newRow.insertCell(2);
+        const locationCell = newRow.insertCell(3);
+
+        // Put data into cells
+        nameCell.textContent = name;
+        notesCell.textContent = notes;
+        timeCell.textContent = timeString;
+        locationCell.textContent = location;
+
+        // Clear form
+        form.reset();
+      }, function() {
+        alert("Location access denied. Can't check-in.");
+      });
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  });
+</script>
+
+<script>
+  // Google Sheets API setup (add your API key here)
+  const CLIENT_ID = '452071405201-qd5dajju29v0mggmsqo2j0iov4f6audg.apps.googleusercontent.com';
+  const API_KEY = 'AIzaSyBOV8cDq7fceHCigFuoCevPwRN9pG6riyI';
+  const SHEET_ID = '1t0eXpsVfZL2ZEyc8N35pzrR7xQINkkhUvRekYki46bo';
+
+  function initGoogleAPI() {
+    gapi.client.init({
+      apiKey: API_KEY,
+      clientId: CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/spreadsheets',
+    }).then(function () {
+      console.log('Google API initialized!');
+    });
+  }
+
+  // Load Google API
+  gapi.load('client:auth2', initGoogleAPI);
+
+  const form = document.getElementById('checkInForm');
+  const table = document.getElementById('checkInTable').getElementsByTagName('tbody')[0];
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('name').value;
+    const notes = document.getElementById('notes').value;
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+
+    // Location handling
+    let location = 'Not Available';
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        location = `Lat: ${latitude}, Lon: ${longitude}`;
+
+        // Create new row
+        const newRow = table.insertRow();
+        newRow.insertCell(0).textContent = name;
+        newRow.insertCell(1).textContent = notes;
+        newRow.insertCell(2).textContent = timeString;
+        newRow.insertCell(3).textContent = location;
+
+        // Send data to Google Sheets
+        sendToGoogleSheets(name, notes, timeString, location);
+
+        form.reset();
+      }, function() {
+        alert("Location access denied.");
+      });
+    }
+
+  });
+
+  // Send data to Google Sheets
+  function sendToGoogleSheets(name, notes, time, location) {
+    const values = [[SURVEYOR, NOTES, TIMESTAMP, LOCATION]];
+
+    const body = {
+      values: values
+    };
+
+    gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: 'Sheet1!A:D', // Adjust this range to match your sheet
+      valueInputOption: 'RAW',
+      resource: body
+    }).then((response) => {
+      console.log('Data sent to Google Sheets:', response);
+    }).catch((error) => {
+      console.error('Error sending data to Google Sheets:', error);
+    });
+  }
+</script>
+
+
+</body>
+</html>
