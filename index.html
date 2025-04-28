@@ -65,3 +65,31 @@
                     notes: notes,
                     time: timeString,
                     location: location
+                };
+
+                fetch(webAppUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.text())
+                .then(result => {
+                    console.log('Success:', result);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+                // Reset form
+                form.reset();
+            }, function() {
+                alert("Location access denied.");
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
