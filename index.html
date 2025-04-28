@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>Surveyor App</title>
-  <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
 
@@ -30,86 +29,68 @@
     </tr>
   </thead>
   <tbody>
-    <!-- Rows go here -->
+    <!-- New rows will go here -->
   </tbody>
 </table>
 
 <script>
-  const CLIENT_ID = '452071405201-qd5dajju29v0mggmsqo2j0iov4f6audg.apps.googleusercontent.com';
-  const API_KEY = 'AIzaSyBOV8cDq7fceHCigFuoCevPwRN9pG6riyI';
-  const SHEET_ID = '1t0eXpsVfZL2ZEyc8N35pzrR7xQINkkhUvRekYki46bo';
+const form = document.getElementById('checkInForm');
+const table = document.getElementById('checkInTable').getElementsByTagName('tbody')[0];
 
-  const form = document.getElementById('checkInForm');
-  const table = document.getElementById('checkInTable').getElementsByTagName('tbody')[0];
+// Your Google Apps Script Web App URL
+const webAppUrl = 'https://script.google.com/macros/s/AKfycbwhLkwTWpJDHd5hTC-j8mtJHNTyHjDR1UqATcR243c/exec';
 
-  // Initialize Google API
-  function initGoogleAPI() {
-    gapi.client.init({
-      apiKey: API_KEY,
-      clientId: CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
-      discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
-    }).then(() => {
-      console.log('✅ Google API initialized!');
-    }, (error) => {
-      console.error('Failed to initialize Google API', error);
-    });
-  }
+form.addEventListener('submit', function(event) {
+  event.preventDefault(); // Stop page refresh
 
-  gapi.load('client:auth2', initGoogleAPI);
+  const name = document.getElementById('name').value;
+  const notes = document.getElementById('notes').value;
+  const now = new Date();
+  const timeString = now.toLocaleTimeString();
 
-  form.addEventListener('submit', function(event) {
-    event.preventDefault();
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const location = `Lat: ${latitude}, Lon: ${longitude}`;
 
-    const name = document.getElementById('name').value;
-    const notes = document.getElementById('notes').value;
-    const now = new Date();
-    const timeString = now.toLocaleString(); // Date + Time
+      // Create new table row
+      const newRow = table.insertRow();
+      newRow.insertCell(0).textContent = name;
+      newRow.insertCell(1).textContent = notes;
+      newRow.insertCell(2).textContent = timeString;
+      newRow.insertCell(3).textContent = location;
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        const location = `Lat: ${latitude}, Lon: ${longitude}`;
-
-        // Insert into local table
-        const newRow = table.insertRow();
-        newRow.insertCell(0).textContent = name;
-        newRow.insertCell(1).textContent = notes;
-        newRow.insertCell(2).textContent = timeString;
-        newRow.insertCell(3).textContent = location;
-
-        // Send to Google Sheets
-        sendToGoogleSheets(name, notes, timeString, location);
-
-        form.reset();
-      }, function() {
-        alert("Location access denied.");
+      // Send data to Google Sheets
+      fetch(webAppUrl, {
+        method: 'POST',
+        mode: 'no-cors', // Important!
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          notes: notes,
+          time: timeString,
+          location: location
+        })
+      })
+      .then(response => {
+        console.log('Submitted successfully!');
+      })
+      .catch(error => {
+        console.error('Error!', error.message);
       });
-    } else {
-      alert("Geolocation not supported by this browser.");
-    }
-  });
 
-  function sendToGoogleSheets(name, notes, time, location) {
-    gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:D", // Make sure your Sheet is named 'Sheet1'
-      valueInputOption: "RAW",
-      insertDataOption: "INSERT_ROWS",
-      resource: {
-        values: [
-          [name, notes, time, location]
-        ]
-      }
-    }).then((response) => {
-      console.log("✅ Data submitted!", response);
-      alert("✅ Successfully submitted to Google Sheets!");
-    }, (error) => {
-      console.error("❌ Error submitting to Google Sheets", error);
-      alert("❌ Failed to submit to Google Sheets");
+      // Clear form
+      form.reset();
+    }, function() {
+      alert("Location access denied. Can't check-in.");
     });
+  } else {
+    alert("Geolocation is not supported by this browser.");
   }
+});
 </script>
 
 </body>
